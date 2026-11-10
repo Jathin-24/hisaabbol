@@ -74,6 +74,13 @@ const txRow = x => `<button class="tx" data-act="tx" data-id="${x.id}">${bubble(
 
 // ───────────────────────────── boot & router
 async function ensureSession() {
+  if (session.token) {
+    try { await api('/me'); }
+    catch (e) {
+      if (!(e instanceof ApiErr) || e.code !== 'invalid_token') throw e;
+      session.token = null;
+    }
+  }
   if (!session.token) {
     const key = await native.requestRegistrationKey();
     const headers = key ? { 'X-Registration-Key': key } : {};
