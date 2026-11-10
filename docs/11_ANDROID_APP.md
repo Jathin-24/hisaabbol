@@ -37,8 +37,9 @@ The server must be **https** (the WebView only allows the microphone on secure o
 The Render Blueprint is configured for the free plan for hackathon demos. Free instances can sleep while idle, may take time to wake, and have ephemeral storage: SQLite data can be lost after a restart or redeploy. Do not use this deployment as the only copy of important financial data.
 
 ## First run on the phone
-1. Open the app → it asks for the server address (pre-filled if you built with `EXPO_PUBLIC_SERVER_URL`) → onboarding → on the last step tap **Enable notification access** → switch HisaabBol on in Android settings → come back.
+1. Open the app → it asks for the server address (pre-filled if you built with `EXPO_PUBLIC_SERVER_URL`) → onboarding → on the last step tap **Turn on notification access** → switch HisaabBol on in Android settings → come back. If skipped, the Home and More screens keep a notification-access shortcut until enabled.
 2. Allow microphone and notifications when asked. If voice still does not start, open Android **Settings → Apps → HisaabBol → Permissions → Microphone** and allow it. The connected server must use HTTPS. On Xiaomi/Oppo/Vivo/Samsung also allow **autostart / unrestricted battery** or the OS will kill the background service.
+3. Payment alerts are accepted only from the Android package allow-list in `android-app/src/config.ts` (UPI apps and supported messaging apps). Bank alerts delivered through an unsupported banking app are ignored; add its verified package ID to that list and rebuild if needed.
 
 ## Device test checklist (I could not run these — please do, in this order)
 | # | Test | Expected |

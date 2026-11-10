@@ -247,13 +247,19 @@ def create_transaction(db, user, *, capture_id=None, direction="debit", amount_p
     first = clean[0]
     spoken_lang = "hi" if s["language_hint"].startswith("hi") else "en"
     return {"transaction": tx_out(db, get_tx(db, uid, tid)), "alerts": alerts, "udhaar_updates": udhaar_updates,
-            "speech_text": confirmation_text(spoken_lang, amount_paise, first["category"] if len(clean) == 1 else "multiple items")}
+            "speech_text": confirmation_text(spoken_lang, amount_paise,
+                                             " and ".join(i["label"] for i in clean) if len(clean) > 1 else first["label"],
+                                             direction)}
 
 
-def confirmation_text(lang: str, amount_paise: int, category: str) -> str:
-    cat = category.replace("&", "and").replace("(", "").replace(")", "")
+def confirmation_text(lang: str, amount_paise: int, purpose: str, direction: str = "debit") -> str:
     words = textutil.amount_words(amount_paise)
-    return f"Save ho gaya. {words}, {cat}." if lang == "hi" else f"Saved. {words}, {cat}."
+    purpose = purpose.strip()[:120] or "your expenses"
+    if lang == "hi":
+        return (f"Achha, {purpose} ke liye {words} ka kharcha note kar liya." if direction == "debit"
+                else f"Achha, {purpose} se {words} aaye hain, note kar liya.")
+    return (f"Nice, {words} for {purpose} is in your log." if direction == "debit"
+            else f"Nice, {words} came in from {purpose}. I've added it to your log.")
 
 
 def update_transaction(db, user, tid: int, items: list[dict] | None, user_note: str | None, remember_merchant: bool = True) -> dict:

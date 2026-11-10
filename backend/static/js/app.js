@@ -37,6 +37,11 @@ function applyPrefs() {
   document.querySelector('meta[name=theme-color]')?.setAttribute('content', a);
   document.body.classList.toggle('compact', !!prefs.compact); setLang(prefs.ui);
 }
+function savedMessage(tx) {
+  const labels = tx.items.map(i => i.label).filter(Boolean);
+  const purpose = labels.length > 1 ? labels.slice(0, 2).join(' + ') : labels[0] || tx.items[0]?.category || t('expenses');
+  return t(tx.direction === 'credit' ? 'loggedIncome' : 'loggedExpense', { amount: inr(tx.amount_paise), purpose });
+}
 
 // ───────────────────────────── state & ui primitives
 const S = { settings: null, cats: [], pending: [], month: null, C: null, rid: 0 };
@@ -82,7 +87,7 @@ async function loadCore() {
 }
 async function boot() {
   applyPrefs(); showLock();
-  native.on(m => { if (m.type === 'open_capture') location.hash = '#/capture/' + m.id; if (m.type === 'navigate' && /^#\/[a-z]+$/.test(m.hash || '')) location.hash = m.hash; if (m.type === 'back') goBack(); if (m.type === 'notif_status' && /^#\/(more|onboarding)/.test(location.hash)) route(); });
+  native.on(m => { if (m.type === 'open_capture') location.hash = '#/capture/' + m.id; if (m.type === 'navigate' && /^#\/[a-z]+$/.test(m.hash || '')) location.hash = m.hash; if (m.type === 'back') goBack(); if (m.type === 'notif_status' && /^#\/(home|more|onboarding)/.test(location.hash)) route(); });
   try { await ensureSession(); await loadCore(); } catch (e) {
     if (e instanceof ApiErr && e.code === 'registration_closed') native.send({ type: 'registration_rejected' });
     $('#view').innerHTML = empty('⚠️', 'Can’t reach the server', e.message); return;
@@ -152,7 +157,8 @@ async function home() {
   const recent = tx.total ? `<div class="card"><div class="row between"><h2>${t('recent')}</h2><button class="ghost" data-go="activity" style="padding:4px 8px;min-height:0">${t('seeAll')}</button></div><div class="list">${tx.items.map(txRow).join('')}</div></div>`
     : `<div class="card">${empty('🎙️', t('welcomeTitle'), t('obAutoBody'))}${S.demo ? `<button class="primary full" data-act="demo">${t('tryDemo')}</button><button class="full" style="margin-top:8px" data-act="seed">${t('sample')}</button>` : `<button class="primary full" data-act="open-cap" data-id="cash">🎙️ ${t('addCash')}</button>`}</div>`;
   const allDone = tx.total && !S.pending.length ? `<div class="card flat row"><div class="ico" style="--c:#2b8a3e">✅</div><div><b>${t('allCaught')}</b><div class="sm mut">${t('undoneHint')}</div></div></div>` : '';
-  return `<div class="topbar" style="padding:6px 0 0"><div><div class="mut sm">${t('hello')}${prefs.name ? ', ' + esc(prefs.name) : ''} 👋</div><h1>HisaabBol</h1></div><span id="net" class="dot"></span></div><div id="offline" class="card flat sm hide">${t('offline')}</div>${hero}${todayCard}${pend}${allDone}${reminders}${recent}`;
+  const notifSetup = native.present && native.status !== 'authorized' ? accessCard({ compact: true }) : '';
+  return `<div class="topbar" style="padding:6px 0 0"><div><div class="mut sm">${t('hello')}${prefs.name ? ', ' + esc(prefs.name) : ''} 👋</div><h1>HisaabBol</h1></div><span id="net" class="dot"></span></div><div id="offline" class="card flat sm hide">${t('offline')}</div>${hero}${todayCard}${notifSetup}${pend}${allDone}${reminders}${recent}`;
 }
 
 // ───────────────────────────── ACTIVITY
@@ -208,8 +214,8 @@ async function report() {
 const budgetRow = b => `<div style="margin-top:12px"><div class="row between"><span>${b.category ? (CAT_ICON[b.category] || '') + ' ' + esc(b.category) : t('overall')}</span><span class="sm mut">${inr(b.spent_paise)} / ${inr(b.limit_paise)}</span></div><div class="bar ${b.state === 'over' ? 'over' : b.state === 'warning' ? 'warn' : ''}" style="margin-top:6px"><i style="width:${Math.min(100, b.percent)}%"></i></div></div>`;
 
 // ───────────────────────────── MORE / UDHAAR / BUDGETS / SETTINGS / DIAGNOSTICS / PRIVACY
-const accessCard = () => native.present
-  ? `<div class="card"><div class="row"><div class="ico">${native.status === 'authorized' ? '🟢' : '🔴'}</div><div class="grow"><b>${native.status === 'authorized' ? t('accessOn') : t('accessOff')}</b><div class="sm mut">${t('obAutoBody')}</div></div></div>${native.status === 'authorized' ? '' : `<button class="primary full" style="margin-top:12px" data-act="enable-access">${t('enableAccess')}</button>`}</div>`
+const accessCard = ({ compact = false } = {}) => native.present
+  ? `<div class="card notif-card ${native.status === 'authorized' ? 'is-on' : 'is-off'}"><div class="row"><div class="ico">${native.status === 'authorized' ? '🟢' : '🔔'}</div><div class="grow"><b>${native.status === 'authorized' ? t('accessOn') : t('accessOff')}</b><div class="sm mut">${t('notifSteps')}</div></div></div>${native.status === 'authorized' ? `<div class="sm mut notif-sources">${t('notifSources')}</div>` : `<button class="primary full" style="margin-top:12px" data-act="enable-access">${t('enableAccess')}</button>${compact ? '' : `<div class="xs mut" style="margin-top:8px">${t('notifSources')}</div>`}`}</div>`
   : `<div class="card flat sm">ℹ️ ${t('webOnly')}</div>`;
 async function more() {
   const row = (go, ico, label, sub = '') => `<button class="rowbtn" data-go="${go}"><div class="ico">${ico}</div><div class="grow"><b>${label}</b>${sub ? `<span class="sm mut">${sub}</span>` : ''}</div><span class="chev">›</span></button>`;
@@ -370,10 +376,10 @@ async function saveDraft() {
   try {
     const res = C.cap ? await outbox.post(`/captures/${C.cap.id}/confirm`, body) : await outbox.post('/transactions', { ...body, amount_paise: total, source: 'voice' });
     if (res.queued) { toast(t('queued')); location.hash = '#/home'; return; }
-    const r = res.data; C.phase = 'done'; C.doneMsg = r.alerts.map(a => a.message).join(' '); drawCap(); refreshPending();
+    const r = res.data; C.phase = 'done'; C.doneMsg = [savedMessage(r.transaction), ...r.alerts.map(a => a.message)].filter(Boolean).join(' '); drawCap(); refreshPending();
     if (S.settings.tts_enabled) api('/tts', { json: { transaction_id: r.transaction.id }, raw: true }).then(x => x.blob()).then(b => { const a = new Audio(URL.createObjectURL(b)); a.play().catch(() => {}); }).catch(() => {});
     const txId = r.transaction.id;
-    setTimeout(() => { if (S.C === C) { S.C = null; location.hash = '#/home'; setTimeout(() => toast(t('saved'), false, { label: t('undo'), fn: async () => { try { await api('/transactions/' + txId, { method: 'DELETE' }); toast(t('undone')); refreshPending(); route(); } catch (e) { toast(e.message, 1); } } }), 150); } }, 1300);
+    setTimeout(() => { if (S.C === C) { S.C = null; location.hash = '#/home'; setTimeout(() => toast(C.doneMsg || t('saved'), false, { label: t('undo'), fn: async () => { try { await api('/transactions/' + txId, { method: 'DELETE' }); toast(t('undone')); refreshPending(); route(); } catch (e) { toast(e.message, 1); } } }), 150); } }, 1300);
   } catch (e) { toast(e.message, 1); }
 }
 

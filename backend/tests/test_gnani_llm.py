@@ -80,9 +80,20 @@ async def test_tts_payload(keyed):
     assert audio == b"ID3audio" and ct == "audio/mpeg" and seen["model"] == "timbre-v3.0" and seen["language"] == "hi-en" and seen["audio_config"]["container"] == "mp3"
 
 
-def test_tts_route_mock_and_disabled(client, user, mock_gnani):
-    r = client.post(f"{H}/tts", json={"text": "hello"}, headers=user)
-    assert r.status_code == 200 and r.content[:4] == b"RIFF"
+def test_tts_route_mock_and_disabled(client, user, mock_gnani, monkeypatch):
+    client.put(f"{H}/settings", json={"language_hint": "en-IN"}, headers=user)
+    tx = client.post(f"{H}/transactions", json={"amount_paise": 25000,
+        "items": [{"label": "Lunch with Neha", "amount_paise": 25000, "category": "Food & Dining"}]}, headers=user).json()
+    spoken = {}
+
+    async def fake_tts(text, language):
+        spoken["text"], spoken["language"] = text, language
+        return b"RIFFaudio", "audio/wav"
+
+    monkeypatch.setattr(gnani, "tts", fake_tts)
+    r = client.post(f"{H}/tts", json={"transaction_id": tx["transaction"]["id"]}, headers=user)
+    assert r.status_code == 200 and r.content == b"RIFFaudio"
+    assert "Lunch with Neha" in spoken["text"] and "Nice" in spoken["text"]
     client.put(f"{H}/settings", json={"tts_enabled": False}, headers=user)
     assert client.post(f"{H}/tts", json={"text": "hello"}, headers=user).status_code == 409
 

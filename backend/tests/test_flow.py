@@ -85,7 +85,9 @@ def test_voice_loop_end_to_end(client, user, mock_gnani):
     d = v["draft"]
     assert d["items"][0]["category"] == "Food & Dining" and d["items"][0]["amount_paise"] == 45000
     c = client.post(f"{H}/captures/{cap['id']}/confirm", json={"items": d["items"], "transcript": v["transcript"]}, headers=user).json()
-    assert c["transaction"]["amount_paise"] == 45000 and "four hundred fifty rupees" in c["speech_text"]
+    assert c["transaction"]["amount_paise"] == 45000
+    assert "Biryani Team Lunch ke liye four hundred fifty rupees" in c["speech_text"]
+    assert "note kar liya" in c["speech_text"] and "Saved." not in c["speech_text"]
     assert client.get(f"{H}/captures", headers=user).json()["items"] == []
     again = client.post(f"{H}/captures/{cap['id']}/confirm", json={"items": d["items"]}, headers=user)
     assert again.status_code == 409 and again.json()["error"]["code"] == "already_answered"
