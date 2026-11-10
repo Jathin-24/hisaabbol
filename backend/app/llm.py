@@ -23,6 +23,7 @@ If the purpose is unclear, use label "Expense", low confidence, and a short foll
 ("500 food, 200 gift") return several items whose amounts sum to the payment. Never invent amounts: if a payment amount is given and there is one item, use it.
 Hinglish: 'X ne udhaar liya' = X borrowed from me (i_lent); 'X se udhaar liya' = I borrowed (i_borrowed); 'X ko udhaar diya' = i_lent;
 'X ne udhaar diya' = i_borrowed. Loans -> category 'Lent (udhaar)'; repayments -> 'Repaid'.
+When the user says "I gave/give [amount] to [person]" with a clear person recipient, treat it as money lent to that person, not a regular expense.
 If unsure (confidence<0.5) add a SHORT follow_up_question in the user's language. Label = 2-5 words in English."""
 
 
@@ -39,6 +40,7 @@ async def _gemini_json(prompt: str, temperature: float, timeout: float = 8) -> d
 
 async def understand(transcript: str, amount_paise: int | None, counterparty: str | None, is_person: bool | None,
                      direction: str, merchant_rules: dict[str, str], language: str) -> dict:
+    rule_category, rule_udhaar = rules.detect_udhaar(transcript, direction, counterparty)
     if cfg.llm_enabled:
         try:
             cats = rules.SPEND_CATEGORIES if direction == "debit" else rules.CATEGORIES
@@ -58,6 +60,13 @@ async def understand(transcript: str, amount_paise: int | None, counterparty: st
                 u = out.get("udhaar")
                 if not (isinstance(u, dict) and u.get("direction") in ("i_lent", "i_borrowed", "repaid_by_me", "repaid_to_me")):
                     u = None
+                if rule_udhaar:
+                    u = rule_udhaar
+                    if rule_category in ("Lent (udhaar)", "Repaid"):
+                        for item in items:
+                            item["category"] = rule_category
+                        if rule_category == "Lent (udhaar)" and rule_udhaar.get("person") and len(items) == 1:
+                            items[0]["label"] = f"Lent to {rule_udhaar['person']}"
                 return {"items": items, "udhaar": u, "confidence": float(out.get("confidence", 0.6)),
                         "follow_up_question": out.get("follow_up_question"), "provider": "gemini"}
         except Exception as e:  # never block the user because an LLM failed

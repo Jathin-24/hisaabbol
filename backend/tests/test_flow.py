@@ -182,6 +182,39 @@ def test_udhaar_lend_repay_and_reminders(client, user):
     assert rem and rem[0]["reason"] == "overdue" and "Neha" in rem[0]["message"]
 
 
+def test_cash_voice_give_to_person_is_tracked_as_udhaar(client, user, monkeypatch):
+    from app import gnani
+
+    spoken = {}
+
+    async def fake_tts(text, language):
+        spoken["text"] = text
+        return b"RIFF", "audio/wav"
+
+    monkeypatch.setattr(gnani, "tts", fake_tts)
+    client.put(f"{H}/settings", headers=user, json={"language_hint": "en-IN"})
+    draft = client.post(f"{H}/cash/note", headers=user, json={"text": "I gave 100 to Hamand"}).json()["draft"]
+    assert draft["items"][0]["label"] == "Lent to Hamand"
+    assert draft["items"][0]["category"] == "Lent (udhaar)"
+    assert draft["udhaar"] == {"person": "Hamand", "direction": "i_lent"}
+
+    saved = client.post(f"{H}/transactions", headers=user, json={
+        "amount_paise": 10000, "items": draft["items"], "transcript": "I gave 100 to Hamand",
+        "udhaar": draft["udhaar"],
+    }).json()
+    transaction_id = saved["transaction"]["id"]
+    assert saved["udhaar_updates"] == [{
+        "type": "created", "person": "Hamand", "direction": "i_lent", "amount_paise": 10000,
+    }]
+    assert "keep track" in saved["speech_text"]
+    tts = client.post(f"{H}/tts", headers=user, json={"transaction_id": transaction_id})
+    assert tts.status_code == 200 and "you lent" in spoken["text"] and "Hamand" in spoken["text"]
+    loans = client.get(f"{H}/udhaar", headers=user).json()
+    assert loans["you_will_get_paise"] == 10000
+    assert loans["items"][0]["person"] == "Hamand"
+    assert client.get(f"{H}/reports/monthly", headers=user).json()["total_spent_paise"] == 0
+
+
 def test_budget_alerts_fire_once(client, user):
     client.put(f"{H}/budgets", json={"category": "Food & Dining", "limit_paise": 100000}, headers=user)
     assert client.put(f"{H}/budgets", json={"category": "Lent (udhaar)", "limit_paise": 1}, headers=user).status_code == 422

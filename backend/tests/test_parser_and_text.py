@@ -50,6 +50,11 @@ def test_rules_split_and_udhaar():
     assert rules.detect_udhaar("Neha ne 500 udhaar liya", "debit", None)[1] == {"person": "Neha", "direction": "i_lent"}
     assert rules.detect_udhaar("Neha ne wapas kiye 300", "credit", None)[1]["direction"] == "repaid_to_me"
     assert rules.detect_udhaar("lent 500 to Ramesh", "debit", None)[1]["person"] == "Ramesh"
+    assert rules.detect_udhaar("I gave 100 to Hamand", "debit", None) == (
+        "Lent (udhaar)", {"person": "Hamand", "direction": "i_lent"})
+    assert rules.detect_udhaar("Give 100 to Hamand", "debit", None)[1]["person"] == "Hamand"
+    assert rules.detect_udhaar("I gave 100 to Hamand for dinner", "debit", None)[1]["person"] == "Hamand"
+    assert rules.detect_udhaar("I bought 100 rupees of food for Hamand", "debit", None) == (None, None)
 
 
 def test_expense_labels_drop_payment_narration_and_amount():

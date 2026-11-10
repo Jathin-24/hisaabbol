@@ -249,12 +249,37 @@ def create_transaction(db, user, *, capture_id=None, direction="debit", amount_p
     return {"transaction": tx_out(db, get_tx(db, uid, tid)), "alerts": alerts, "udhaar_updates": udhaar_updates,
             "speech_text": confirmation_text(spoken_lang, amount_paise,
                                              " and ".join(i["label"] for i in clean) if len(clean) > 1 else first["label"],
-                                             direction)}
+                                             direction, udhaar_updates[0] if udhaar_updates else None)}
 
 
-def confirmation_text(lang: str, amount_paise: int, purpose: str, direction: str = "debit") -> str:
+def udhaar_for_transaction(db, uid: str, tid: int) -> dict | None:
+    row = db.execute(
+        "SELECT u.direction,u.amount_paise,p.name FROM udhaar u JOIN people p ON p.id=u.person_id "
+        "WHERE u.user_id=? AND u.transaction_id=? ORDER BY u.id LIMIT 1", (uid, tid)
+    ).fetchone()
+    if not row:
+        return None
+    return {"type": "created", "person": row["name"], "direction": row["direction"], "amount_paise": row["amount_paise"]}
+
+
+def confirmation_text(lang: str, amount_paise: int, purpose: str, direction: str = "debit",
+                      udhaar_update: dict | None = None) -> str:
     words = textutil.amount_words(amount_paise)
     purpose = purpose.strip()[:120] or "your expenses"
+    if udhaar_update and udhaar_update.get("type") == "created":
+        person = udhaar_update["person"]
+        if udhaar_update.get("direction") == "i_lent":
+            return (f"Achha, {person} ko {words} udhaar diye. Main iska hisaab rakhoonga."
+                    if lang == "hi" else f"Nice, you lent {words} to {person}. I'll keep track of it.")
+        return (f"Achha, {person} se {words} udhaar liye. Main iska hisaab rakhoonga."
+                if lang == "hi" else f"Nice, you borrowed {words} from {person}. I'll keep track of it.")
+    if udhaar_update and udhaar_update.get("type") == "settled":
+        person = udhaar_update["person"]
+        if udhaar_update.get("direction") == "repaid_by_me":
+            return (f"Achha, {person} ko {words} wapas karne ka hisaab darj kiya."
+                    if lang == "hi" else f"Nice, I recorded {words} repaid to {person}.")
+        return (f"Achha, {person} se {words} wapas mile, darj kiya."
+                if lang == "hi" else f"Nice, I recorded {words} repaid by {person}.")
     if lang == "hi":
         return (f"Achha, {purpose} ke liye {words} ka kharcha note kar liya." if direction == "debit"
                 else f"Achha, {purpose} se {words} aaye hain, note kar liya.")

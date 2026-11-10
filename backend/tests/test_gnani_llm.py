@@ -124,6 +124,21 @@ async def test_gemini_understand_and_repair(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_gemini_cannot_misclassify_explicit_money_given_to_person(monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "gemini"); monkeypatch.setenv("GEMINI_API_KEY", "g"); monkeypatch.setenv("GEMINI_MODEL", "m")
+    out = {"items": [{"label": "Give 100 to Hamand", "amount_rupees": 100, "category": "Family & Friends"}],
+           "udhaar": None, "confidence": 0.9}
+    llm._transport = mock_transport(lambda r: httpx.Response(200, json={
+        "candidates": [{"content": {"parts": [{"text": json.dumps(out)}]}}]}))
+    result = await llm.understand("I gave 100 to Hamand", None, None, None, "debit", {}, "en-IN")
+    assert result["provider"] == "gemini"
+    assert result["items"] == [{
+        "label": "Lent to Hamand", "amount_paise": 10000, "category": "Lent (udhaar)", "note": None,
+    }]
+    assert result["udhaar"] == {"person": "Hamand", "direction": "i_lent"}
+
+
+@pytest.mark.asyncio
 async def test_gemini_failure_falls_back_to_rules(monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "gemini"); monkeypatch.setenv("GEMINI_API_KEY", "g"); monkeypatch.setenv("GEMINI_MODEL", "m")
     llm._transport = mock_transport(lambda r: httpx.Response(500))

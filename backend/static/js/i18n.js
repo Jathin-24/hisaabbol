@@ -3,7 +3,9 @@ export const LANGS = { en: 'English', hi: 'हिन्दी', te: 'తెల�
 const D = {
   en: {
     home: 'Home', activity: 'Activity', report: 'Report', more: 'More', hello: 'Hello', spentMonth: 'spent this month', spentToday: 'Spent today',
-    loggedExpense: 'Nice, {amount} for {purpose} is in your spending log.', loggedIncome: 'Nice, {amount} from {purpose} is in your income log.', expenses: 'your expenses',
+    loggedExpense: 'Nice, {amount} for {purpose} is in your spending log.', loggedIncome: 'Nice, {amount} from {purpose} is in your income log.',
+    loggedLent: 'Nice, you lent {amount} to {person}. I’ll keep track of it.', loggedBorrowed: 'Nice, you borrowed {amount} from {person}. I’ll keep track of it.',
+    loggedRepaid: 'Nice, I recorded {amount} repaid to {person}.', loggedRepaidToMe: 'Nice, I recorded {amount} repaid by {person}.', expenses: 'your expenses',
     needsNote: 'Needs a note', allCaught: 'All caught up', sayIt: 'Say it', addCash: 'Add cash', recent: 'Recent', seeAll: 'See all',
     tapSpeak: 'Tap and speak', holdClose: 'Hold the phone close to your mouth', listening: 'Listening… tap to finish', understanding: 'Understanding…',
     heard: 'I heard', save: 'Save', skip: 'Skip', typeInstead: 'Type instead', saved: 'Saved', couldntHear: 'Couldn’t hear that — try again or type it.',
@@ -51,7 +53,9 @@ const D = {
   },
   hi: {
     home: 'होम', activity: 'गतिविधि', report: 'रिपोर्ट', more: 'और', hello: 'नमस्ते', spentMonth: 'इस महीने खर्च', spentToday: 'आज का खर्च',
-    loggedExpense: 'बढ़िया, {purpose} के लिए {amount} आज के खर्च में दर्ज है।', loggedIncome: 'बढ़िया, {purpose} से मिले {amount} दर्ज हैं।', expenses: 'आपका खर्च',
+    loggedExpense: 'बढ़िया, {purpose} के लिए {amount} आज के खर्च में दर्ज है।', loggedIncome: 'बढ़िया, {purpose} से मिले {amount} दर्ज हैं।',
+    loggedLent: 'बढ़िया, {person} को {amount} उधार दिए। मैं इसका हिसाब रखूँगा।', loggedBorrowed: 'बढ़िया, {person} से {amount} उधार लिए। मैं इसका हिसाब रखूँगा।',
+    loggedRepaid: 'बढ़िया, {person} को लौटाए {amount} दर्ज कर लिए।', loggedRepaidToMe: 'बढ़िया, {person} से लौटे {amount} दर्ज कर लिए।', expenses: 'आपका खर्च',
     needsNote: 'नोट चाहिए', allCaught: 'सब हो गया',
     sayIt: 'बोलिए', addCash: 'नकद जोड़ें', recent: 'हाल ही में', seeAll: 'सब देखें', tapSpeak: 'टैप करके बोलिए', holdClose: 'फ़ोन को मुँह के पास रखें',
     listening: 'सुन रहा हूँ… पूरा होने पर टैप करें', understanding: 'समझ रहा हूँ…', heard: 'मैंने सुना', save: 'सेव करें', skip: 'छोड़ें', typeInstead: 'टाइप करें',
@@ -96,7 +100,9 @@ const D = {
   },
   te: {
     home: 'హోమ్', activity: 'కార్యకలాపం', report: 'నివేదిక', more: 'మరిన్ని', hello: 'నమస్కారం', spentMonth: 'ఈ నెల ఖర్చు', spentToday: 'ఈ రోజు ఖర్చు',
-    loggedExpense: 'బాగుంది, {purpose} కోసం {amount} మీ ఖర్చుల్లో నమోదు చేశాను.', loggedIncome: 'బాగుంది, {purpose} నుంచి వచ్చిన {amount} నమోదు చేశాను.', expenses: 'మీ ఖర్చులు',
+    loggedExpense: 'బాగుంది, {purpose} కోసం {amount} మీ ఖర్చుల్లో నమోదు చేశాను.', loggedIncome: 'బాగుంది, {purpose} నుంచి వచ్చిన {amount} నమోదు చేశాను.',
+    loggedLent: 'బాగుంది, {person}కు {amount} అప్పుగా ఇచ్చారు. దాన్ని నేను గుర్తుంచుకుంటాను.', loggedBorrowed: 'బాగుంది, {person} నుంచి {amount} అప్పుగా తీసుకున్నారు. దాన్ని నేను గుర్తుంచుకుంటాను.',
+    loggedRepaid: 'బాగుంది, {person}కు తిరిగి చెల్లించిన {amount} నమోదు చేశాను.', loggedRepaidToMe: 'బాగుంది, {person} తిరిగి చెల్లించిన {amount} నమోదు చేశాను.', expenses: 'మీ ఖర్చులు',
     needsNote: 'నోట్ కావాలి', allCaught: 'అన్నీ పూర్తయ్యాయి',
     sayIt: 'చెప్పండి', addCash: 'నగదు జోడించండి', recent: 'ఇటీవలివి', seeAll: 'అన్నీ చూడండి', tapSpeak: 'ట్యాప్ చేసి మాట్లాడండి', holdClose: 'ఫోన్‌ను నోటికి దగ్గరగా పట్టుకోండి',
     listening: 'వింటున్నాను… పూర్తయ్యాక ట్యాప్ చేయండి', understanding: 'అర్థం చేసుకుంటున్నాను…', heard: 'నేను విన్నది', save: 'సేవ్', skip: 'వదిలేయండి', typeInstead: 'టైప్ చేయండి',

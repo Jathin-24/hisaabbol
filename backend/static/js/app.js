@@ -37,7 +37,18 @@ function applyPrefs() {
   document.querySelector('meta[name=theme-color]')?.setAttribute('content', a);
   document.body.classList.toggle('compact', !!prefs.compact); setLang(prefs.ui);
 }
-function savedMessage(tx) {
+function savedMessage(tx, udhaarUpdates = []) {
+  const udhaar = udhaarUpdates[0];
+  if (udhaar?.type === 'created') {
+    return t(udhaar.direction === 'i_lent' ? 'loggedLent' : 'loggedBorrowed', {
+      amount: inr(udhaar.amount_paise), person: udhaar.person,
+    });
+  }
+  if (udhaar?.type === 'settled') {
+    return t(udhaar.direction === 'repaid_by_me' ? 'loggedRepaid' : 'loggedRepaidToMe', {
+      amount: inr(udhaar.applied_paise), person: udhaar.person,
+    });
+  }
   const labels = tx.items.map(i => i.label).filter(Boolean);
   const purpose = labels.length > 1 ? labels.slice(0, 2).join(' + ') : labels[0] || tx.items[0]?.category || t('expenses');
   return t(tx.direction === 'credit' ? 'loggedIncome' : 'loggedExpense', { amount: inr(tx.amount_paise), purpose });
@@ -436,7 +447,7 @@ async function saveDraft() {
   try {
     const res = C.cap ? await outbox.post(`/captures/${C.cap.id}/confirm`, body) : await outbox.post('/transactions', { ...body, amount_paise: total, source: 'voice' });
     if (res.queued) { toast(t('queued')); location.hash = '#/home'; return; }
-    const r = res.data; C.phase = 'done'; C.doneMsg = [savedMessage(r.transaction), ...r.alerts.map(a => a.message)].filter(Boolean).join(' '); drawCap(); refreshPending();
+    const r = res.data; C.phase = 'done'; C.doneMsg = [savedMessage(r.transaction, r.udhaar_updates), ...r.alerts.map(a => a.message)].filter(Boolean).join(' '); drawCap(); refreshPending();
     if (S.settings.tts_enabled) api('/tts', { json: { transaction_id: r.transaction.id }, raw: true }).then(x => x.blob()).then(b => { const a = new Audio(URL.createObjectURL(b)); a.play().catch(() => {}); }).catch(() => {});
     const txId = r.transaction.id;
     setTimeout(() => { if (S.C === C) { S.C = null; location.hash = '#/home'; setTimeout(() => toast(C.doneMsg || t('saved'), false, { label: t('undo'), fn: async () => { try { await api('/transactions/' + txId, { method: 'DELETE' }); toast(t('undone')); refreshPending(); route(); } catch (e) { toast(e.message, 1); } } }), 150); } }, 1300);

@@ -66,7 +66,7 @@ _NAME = r"([A-Za-z\u0900-\u097F\u0C00-\u0C7F]{2,20})"
 def detect_udhaar(text: str, direction: str, counterparty: str | None):
     """Returns (category|None, {'person','direction'}|None). Hinglish semantics:
     'X ne udhaar liya' = X borrowed (I lent) · 'X se udhaar liya' = I borrowed · 'X ko udhaar diya' = I lent ·
-    'X ne udhaar diya' = X lent me."""
+    'X ne udhaar diya' = X lent me. "I gave 100 to X" is treated as money lent."""
     t = text or ""
     low = t.lower()
     person = None
@@ -80,6 +80,13 @@ def detect_udhaar(text: str, direction: str, counterparty: str | None):
             person = m.group(1) if m else None
             d = "repaid_by_me" if direction == "debit" else "repaid_to_me"
         return "Repaid", {"person": (person or counterparty), "direction": d}
+    gave_to = re.search(
+        rf"\b(?:i\s+)?(?:give|gave|giving)\b(?P<middle>[^,.!?]{{0,60}})\bto\s+"
+        rf"(?P<person>{_NAME}(?:\s+{_NAME}){{0,2}}?)(?=\s+(?:for|because|as|and)\b|[,.!?]|$)",
+        t, re.I,
+    )
+    if gave_to and extract_amounts(gave_to.group("middle")):
+        return "Lent (udhaar)", {"person": gave_to.group("person").strip(), "direction": "i_lent"}
     if _LEND.search(low):
         pats = [
             (rf"{_NAME}\s+ne\b.*(?:udhaar|udhar|उधार|loan).*\b(?:liya|liye|लिया)", "i_lent"),
@@ -118,7 +125,8 @@ def understand_rules(transcript: str, amount_paise: int | None, counterparty: st
     else:
         total = amount_paise or (amounts[-1] if amounts else None)
         cat, conf = (udh_cat, 0.75) if udh_cat else categorize(text, counterparty, is_person)
-        items.append({"label": clean_expense_label(text, counterparty or "Expense"), "amount_paise": total, "category": cat, "note": None})
+        label = f"Lent to {udh['person']}" if udh_cat == "Lent (udhaar)" and udh and udh.get("person") else clean_expense_label(text, counterparty or "Expense")
+        items.append({"label": label, "amount_paise": total, "category": cat, "note": None})
     follow = None
     if items[0]["amount_paise"] is None:
         follow = "How much was it?"

@@ -445,7 +445,8 @@ async def tts(body: TTSIn, user=Depends(auth.gnani_user), db=Depends(get_db)):
         t = core.tx_out(db, core.get_tx(db, user["id"], body.transaction_id))
         purpose = " and ".join(i["label"] for i in t["items"]) if len(t["items"]) > 1 else t["items"][0]["label"]
         text = core.confirmation_text("hi" if s["language_hint"].startswith("hi") else "en",
-                                      t["amount_paise"], purpose, t["direction"])
+                                      t["amount_paise"], purpose, t["direction"],
+                                      core.udhaar_for_transaction(db, user["id"], body.transaction_id))
     if not text:
         raise ApiError(422, "text_required", "Send text or transaction_id")
     lang = "hi-en" if s["language_hint"].startswith("hi") else "en-IN"
