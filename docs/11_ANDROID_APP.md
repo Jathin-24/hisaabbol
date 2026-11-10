@@ -34,6 +34,8 @@ cd android
 ```
 The server must be **https** (the WebView only allows the microphone on secure origins). If no server URL is baked into the build, enter the HTTPS backend address on first launch. If the backend requires `REGISTRATION_KEY`, enter it on that same screen; it is stored with Android SecureStore and sent only during device registration. The backend must be deployed separately and have its Gnani key configured; API keys must never be embedded in the APK. Edit `src/config.ts` to change the allow-listed apps.
 
+The Render Blueprint is configured for the free plan for hackathon demos. Free instances can sleep while idle, may take time to wake, and have ephemeral storage: SQLite data can be lost after a restart or redeploy. Do not use this deployment as the only copy of important financial data.
+
 ## First run on the phone
 1. Open the app → it asks for the server address (pre-filled if you built with `EXPO_PUBLIC_SERVER_URL`) → onboarding → on the last step tap **Enable notification access** → switch HisaabBol on in Android settings → come back.
 2. Allow microphone and notifications when asked. If voice still does not start, open Android **Settings → Apps → HisaabBol → Permissions → Microphone** and allow it. The connected server must use HTTPS. On Xiaomi/Oppo/Vivo/Samsung also allow **autostart / unrestricted battery** or the OS will kill the background service.

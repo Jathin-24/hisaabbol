@@ -36,4 +36,4 @@ Phone: deploy the backend to any https host (Dockerfile + render.yaml included),
 ⚠️ **Speech was mocked in those tests.** Real Gnani STT/TTS and Gemini were never called (no keys/network from my sandbox). Request formats follow docs.gnani.ai; run the two curls in `docs/06_GNANI_INTEGRATION.md` with your key first.
 ⚠️ **The Android app has not been compiled or run on a phone** (see `docs/11_ANDROID_APP.md` for the device checklist). The web app works without it; automatic detection needs it.
 ⚠️ Parser fixtures are representative bank formats, not your real SMS — add your own (docs/07).
-⚠️ SQLite on free hosting resets on restart — use a persistent disk or demo before it sleeps.
+⚠️ The Render hackathon Blueprint uses the free instance with ephemeral storage: it may sleep when idle, and SQLite data can be lost when the service restarts or redeploys. Use it for demos only, not as the sole copy of important financial data.
