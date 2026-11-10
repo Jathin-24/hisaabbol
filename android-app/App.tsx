@@ -7,7 +7,7 @@ import { getPermissionStatus, requestPermission, setAllowedPackages, isIgnoringB
 import { ALLOWED_PACKAGES, DEFAULT_SERVER_URL } from './src/config';
 import { ensureChannel, realDeps } from './src/headless';
 import { flushQueue } from './src/ingest';
-import { getRegistrationKey, getServer, setRegistrationKey, setServer, setSession } from './src/storage';
+import { clearNotificationHistory, getNotificationHistory, getRegistrationKey, getServer, setRegistrationKey, setServer, setSession } from './src/storage';
 import { scheduleDigest } from './src/schedule';
 import { realSched } from './src/schedule.native';
 
@@ -75,6 +75,14 @@ export default function App() {
     if (m.type === 'registration_rejected') { await setServer(''); setServerState(null); }
     if (m.type === 'session' && m.token && m.base) { await setSession({ token: m.token, base: m.base }); flushQueue(realDeps).catch(() => {}); }
     if (m.type === 'get_notif_status') sendStatus();
+    if (m.type === 'get_notification_history') {
+      try { toWeb({ type: 'notification_history', entries: await getNotificationHistory() }); }
+      catch (error) { toWeb({ type: 'notification_history_error', message: error instanceof Error ? error.message : 'Could not load notification history.' }); }
+    }
+    if (m.type === 'clear_notification_history') {
+      try { await clearNotificationHistory(); toWeb({ type: 'notification_history_cleared' }); }
+      catch (error) { toWeb({ type: 'notification_history_error', message: error instanceof Error ? error.message : 'Could not clear notification history.' }); }
+    }
     if (m.type === 'request_notif_access') { requestPermission(); }
     if (m.type === 'request_prompt_notifications') { Linking.openSettings().catch(() => {}); }
     if (m.type === 'request_battery') requestIgnoreBatteryOptimizations();

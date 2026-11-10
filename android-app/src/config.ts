@@ -5,6 +5,6 @@ export const ALLOWED_PACKAGES = [
   'in.amazon.mShop.android.shopping', 'com.dreamplug.androidapp', // Amazon, CRED
   'com.google.android.apps.messaging', 'com.samsung.android.messaging', 'com.android.mms', 'com.android.messaging', // SMS apps (bank alerts)
 ];
-export const DEFAULT_SERVER_URL = process.env.EXPO_PUBLIC_SERVER_URL ?? '';
+export const DEFAULT_SERVER_URL = process.env.EXPO_PUBLIC_SERVER_URL || 'https://hisaabbol-api.onrender.com';
 export const CHANNEL_ID = 'payments';
 export const REQUEST_TIMEOUT_MS = 10000;

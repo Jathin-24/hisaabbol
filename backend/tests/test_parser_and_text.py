@@ -55,9 +55,14 @@ def test_rules_split_and_udhaar():
 def test_expense_labels_drop_payment_narration_and_amount():
     assert textutil.clean_expense_label("I paid 50 rupees for dinner") == "Dinner"
     assert textutil.clean_expense_label("spent ₹120 on chai") == "Chai"
+    assert textutil.clean_expense_label("I ate Tiffin for 100 rupees in the morning") == "Tiffin"
+    assert textutil.clean_expense_label("Morning Tiffin") == "Tiffin"
     draft = rules.understand_rules("paid 50 dinner", None, None, None)
     assert draft["items"][0]["label"] == "Dinner"
     assert draft["items"][0]["amount_paise"] == 5000
+    morning_draft = rules.understand_rules("I ate Tiffin for 100 rupees in the morning", None, None, None)
+    assert morning_draft["items"][0]["label"] == "Tiffin"
+    assert morning_draft["items"][0]["amount_paise"] == 10000
 
 
 def test_rules_unknown_asks_followup():

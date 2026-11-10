@@ -107,11 +107,18 @@ def test_diagnostics_counts_gnani_calls(client, user, mock_gnani):
 @pytest.mark.asyncio
 async def test_gemini_understand_and_repair(monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "gemini"); monkeypatch.setenv("GEMINI_API_KEY", "g"); monkeypatch.setenv("GEMINI_MODEL", "m")
-    out = {"items": [{"label": "Paid 300 for lunch", "amount_rupees": 300, "category": "Food & Dining"}, {"label": "Gift", "amount_rupees": 100, "category": "Made Up"}],
+    out = {"items": [{"label": "Morning Tiffin", "amount_rupees": 100, "category": "Food & Dining"}, {"label": "Gift", "amount_rupees": 100, "category": "Made Up"}],
            "confidence": 0.9}
-    llm._transport = mock_transport(lambda r: httpx.Response(200, json={"candidates": [{"content": {"parts": [{"text": json.dumps(out)}]}}]}))
-    res = await llm.understand("x", 45000, "Zomato", False, "debit", {}, "hi-IN")
-    assert res["provider"] == "gemini" and res["items"][0]["label"] == "Lunch" and res["items"][1]["category"] == "Other"
+    seen = {}
+    def handle(req):
+        seen.update(json.loads(req.content))
+        seen["timeout"] = req.extensions["timeout"]
+        return httpx.Response(200, json={"candidates": [{"content": {"parts": [{"text": json.dumps(out)}]}}]})
+    llm._transport = mock_transport(handle)
+    res = await llm.understand("I ate Tiffin for 100 rupees in the morning", 45000, "Zomato", False, "debit", {}, "hi-IN")
+    assert res["provider"] == "gemini" and res["items"][0]["label"] == "Tiffin" and res["items"][1]["category"] == "Other"
+    assert seen["generationConfig"]["maxOutputTokens"] == 256
+    assert seen["timeout"]["read"] == 8
     d = core.normalize_draft(res, 45000, "Zomato", {}, "debit", "x", None)   # 300+100 < 450 -> remainder item added, flagged for review
     assert sum(i["amount_paise"] for i in d["items"]) == 45000 and d["needs_review"] and d["items"][-1]["label"] == "Remaining"
 

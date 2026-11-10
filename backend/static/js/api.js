@@ -27,6 +27,30 @@ export const native = {
       this.send({ type: 'get_registration_key' });
     });
   },
+  requestNotificationHistory() {
+    if (!this.present) return Promise.resolve([]);
+    return new Promise((resolve, reject) => {
+      let timer;
+      const off = this.on(m => {
+        if (m.type === 'notification_history') { clearTimeout(timer); off(); resolve(Array.isArray(m.entries) ? m.entries : []); }
+        if (m.type === 'notification_history_error') { clearTimeout(timer); off(); reject(new Error(m.message || 'Could not load notification history.')); }
+      });
+      timer = setTimeout(() => { off(); reject(new Error('Timed out loading notification history.')); }, 5000);
+      this.send({ type: 'get_notification_history' });
+    });
+  },
+  clearNotificationHistory() {
+    if (!this.present) return Promise.reject(new Error('Notification history is available in the Android app.'));
+    return new Promise((resolve, reject) => {
+      let timer;
+      const off = this.on(m => {
+        if (m.type === 'notification_history_cleared') { clearTimeout(timer); off(); resolve(); }
+        if (m.type === 'notification_history_error') { clearTimeout(timer); off(); reject(new Error(m.message || 'Could not clear notification history.')); }
+      });
+      timer = setTimeout(() => { off(); reject(new Error('Timed out clearing notification history.')); }, 5000);
+      this.send({ type: 'clear_notification_history' });
+    });
+  },
 };
 function onNativeMsg(ev) {
   let m = ev.data; if (typeof m === 'string') { try { m = JSON.parse(m); } catch { return; } }

@@ -130,12 +130,18 @@ def strip_amounts(text: str) -> str:
 
 
 def clean_expense_label(text: str, fallback: str = "Expense") -> str:
-    """Keep the expense purpose, not payment narration or its spoken amount."""
+    """Keep the expense purpose, not payment narration, its spoken amount, or time context."""
     s = strip_amounts(text)
-    s = re.sub(r"\b(?:i|we)\s+(?=(?:paid|spent|bought|purchased)\b)", "", s, flags=re.I)
-    s = re.sub(r"\b(?:paid|paying|pay|spent|spending|spend|bought|buying|buy|purchased|purchase|expense|transaction)\b",
+    s = re.sub(r"\b(?:(?:early|late)\s+)?(?:in the|during the|at the|this|today in the|yesterday in the)\s+(?:early\s+)?(?:morning|afternoon|evening|night)\b",
                " ", s, flags=re.I)
-    s = re.sub(r"\b(for|ke liye|par|pe|on|the|a|an|aur|and|ka|ki|ko|rupees?|rupaye|rupay|cash)\b",
+    s = re.sub(r"^\s*(?:(?:early|late)\s+)?(?:morning|afternoon|evening|night)\b[\s,:-]*",
+               " ", s, flags=re.I)
+    s = re.sub(r"\b(?:(?:early|late)\s+)?(?:morning|afternoon|evening|night)\s*$",
+               " ", s, flags=re.I)
+    s = re.sub(r"\b(?:i|we)\s+(?=(?:paid|spent|bought|purchased|ate|eat|had|have|drank|drink)\b)", "", s, flags=re.I)
+    s = re.sub(r"\b(?:paid|paying|pay|spent|spending|spend|bought|buying|buy|purchased|purchase|ate|eat|eaten|had|have|drank|drink|expense|transaction)\b",
+               " ", s, flags=re.I)
+    s = re.sub(r"\b(for|in|at|ke liye|par|pe|on|the|a|an|aur|and|ka|ki|ko|rupees?|rupaye|rupay|cash)\b",
                " ", s, flags=re.I)
     words = re.sub(r"\s+", " ", s).strip(" ,.-").split()[:5]
     return " ".join(words).title() if words else fallback

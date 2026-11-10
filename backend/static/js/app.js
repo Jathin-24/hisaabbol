@@ -128,12 +128,12 @@ function syncBadge() {
   const b = $('#nav-badge'); if (b) { b.textContent = S.pending.length; b.classList.toggle('hide', !S.pending.length); }
   const d = $('#net'); if (d) d.className = 'dot' + (navigator.onLine ? '' : ' off'); const o = $('#offline'); if (o) o.classList.toggle('hide', navigator.onLine);
 }
-const ROUTES = { home, activity, report, more, udhaar, budgets, shops, settings, diagnostics, privacy, onboarding };
+const ROUTES = { home, activity, report, more, udhaar, budgets, shops, settings, diagnostics, privacy, notifications, onboarding };
 async function route() {
   const h = (location.hash || '#/home').replace(/^#\/?/, ''); const [name, arg] = h.split('/'); const id = ++S.rid;
   $('.cap')?.remove(); document.querySelectorAll('.sheet-bg').forEach(x => x.remove());
   const showNav = name !== 'onboarding'; $('nav.tabs').classList.toggle('hide', !showNav);
-  document.querySelectorAll('nav.tabs [data-go]').forEach(b => b.classList.toggle('on', b.dataset.go === (['udhaar', 'budgets', 'shops', 'settings', 'diagnostics', 'privacy'].includes(name) ? 'more' : name || 'home')));
+  document.querySelectorAll('nav.tabs [data-go]').forEach(b => b.classList.toggle('on', b.dataset.go === (['udhaar', 'budgets', 'shops', 'settings', 'diagnostics', 'privacy', 'notifications'].includes(name) ? 'more' : name || 'home')));
   if (name === 'capture') return renderCapture(arg);
   const fn = ROUTES[name || 'home'] || home; $('#view').innerHTML = skeleton();
   try { const html = await fn(arg); if (id === S.rid) { $('#view').innerHTML = html; window.scrollTo(0, 0); syncBadge(); afterRender(name); } }
@@ -195,6 +195,31 @@ async function report() {
   const todayKey = dateKeyInZone(new Date(), S.settings.tz);
   const recentDaily = r.daily.filter(d => d.date <= todayKey).slice(-7).reverse();
   const dailyRows = recentDaily.map(d => `<div class="row between"><span>${new Date(`${d.date}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</span><b>${inr(d.amount_paise)}</b></div>`).join('');
+  const [calendarYear, calendarMonth] = r.month.split('-').map(Number);
+  const daysInMonth = new Date(calendarYear, calendarMonth, 0).getDate();
+  const firstWeekday = new Date(calendarYear, calendarMonth - 1, 1, 12).getDay();
+  const dailyAmounts = Object.fromEntries(r.daily.map(d => [d.date, d.amount_paise]));
+  const maxDailySpend = Math.max(...r.daily.map(d => d.amount_paise), 1);
+  const locale = prefs.ui === 'hi' ? 'hi-IN' : prefs.ui === 'te' ? 'te-IN' : 'en-IN';
+  const weekdayHeadings = Array.from({ length: 7 }, (_, i) =>
+    new Date(2024, 0, 7 + i, 12).toLocaleDateString(locale, { weekday: 'short' }));
+  const compactAmount = paise => {
+    const rupees = paise / 100;
+    if (rupees >= 10000000) return `₹${(rupees / 10000000).toFixed(1)}Cr`;
+    if (rupees >= 100000) return `₹${(rupees / 100000).toFixed(1)}L`;
+    if (rupees >= 1000) return `₹${(rupees / 1000).toFixed(1)}k`;
+    return inr0(paise);
+  };
+  const calendarDays = Array.from({ length: firstWeekday }, () => '<span class="cal-empty"></span>');
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = `${r.month}-${String(day).padStart(2, '0')}`;
+    const amount = dailyAmounts[date] || 0;
+    const intensity = amount ? Math.max(12, Math.round(amount / maxDailySpend * 70)) : 0;
+    calendarDays.push(`<div class="cal-day ${date === todayKey ? 'today' : ''}" aria-label="${esc(new Date(`${date}T12:00:00`).toLocaleDateString(locale, { dateStyle: 'full' }))}: ${esc(inr(amount))}" title="${date}: ${inr(amount)}" style="--cal-intensity:${intensity}%"><span class="cal-date">${day}</span><span class="cal-amount">${amount ? compactAmount(amount) : ''}</span></div>`);
+  }
+  const calendar = `<div class="card"><div class="row between"><h2>${t('spendingCalendar')}</h2><span class="sm mut">${monthName(r.month)}</span></div>
+    <div class="cal-grid" style="margin-top:12px">${weekdayHeadings.map(d => `<span class="cal-weekday">${esc(d)}</span>`).join('')}${calendarDays.join('')}</div>
+    <div class="xs mut" style="margin-top:10px">${t('calendarHint')}</div></div>`;
   let acc = 0; const R = 54, C = 2 * Math.PI * R;
   const arcs = r.by_category.map(c => { const len = c.amount_paise / (total || 1) * C; const el = `<circle r="${R}" cx="70" cy="70" fill="none" stroke="${catColor(c.category)}" stroke-width="20" stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-acc}" transform="rotate(-90 70 70)"/>`; acc += len; return el; }).join('');
   const donut = total ? `<div class="donut"><svg width="170" height="170" viewBox="0 0 140 140" role="img" aria-label="Spending by category"><circle r="${R}" cx="70" cy="70" fill="none" stroke="var(--surface2)" stroke-width="20"/>${arcs}</svg><div class="c"><div class="xs mut">${t('thisMonth')}</div><b style="font-size:20px">${inr(total)}</b></div></div>` : '';
@@ -202,6 +227,7 @@ async function report() {
   return `<div class="topbar" style="padding:6px 0"><h1>${t('report')}</h1><span class="row tight"><button data-act="mprev" aria-label="Previous month">‹</button><b style="min-width:92px;text-align:center">${monthName(r.month)}</b><button data-act="mnext" aria-label="Next month">›</button></span></div>
   <div class="card accent"><div class="big">${inr(total)}</div><div class="row wrap" style="margin-top:10px">${v.delta_pct == null ? '' : `<span class="pill">${v.delta_pct > 0 ? '▲' : '▼'} ${Math.abs(v.delta_pct)}% ${t('vsLast')}</span>`}<span class="pill">${r.transaction_count} ${t('entries')}</span><span class="pill">${inr0(r.avg_per_day_paise)} ${t('perDay')}</span></div></div>
   ${r.pending_notes ? `<div class="card flat sm">⏳ ${r.pending_notes} ${t('pendingTitle').toLowerCase()}</div>` : ''}
+  ${calendar}
   ${total ? `<div class="card"><h2>${t('noticed')}</h2><ul style="padding-left:18px;margin:10px 0 0">${r.insights.map(i => `<li style="margin:8px 0">${esc(i)}</li>`).join('')}</ul></div>
   <div class="card"><h2>${t('whereWent')}</h2>${donut}<div class="legend">${cats.map(c => `<div><span class="sq" style="background:${catColor(c.category)}"></span><span class="grow">${esc(c.category)}</span><b>${inr(c.amount_paise)}</b><span class="mut xs" style="width:38px;text-align:right">${Math.round(c.percent)}%</span></div>`).join('')}</div>${r.by_category.length > 5 ? `<button class="ghost legend-more" data-act="legend">${S.legendAll ? t('moreLess') : t('moreShow')}</button>` : ''}</div>
   <div class="card"><h2>${t('daily')}</h2><div class="bars" style="margin-top:12px">${r.daily.map(d => `<i title="${d.date}: ${inr(d.amount_paise)}" style="height:${Math.max(3, d.amount_paise / max * 100)}%"></i>`).join('')}</div><div class="list sm" style="margin-top:12px">${dailyRows}</div></div>
@@ -222,7 +248,34 @@ async function more() {
   const act = (a, ico, label, sub = '') => `<button class="rowbtn" data-act="${a}"><div class="ico">${ico}</div><div class="grow"><b>${label}</b>${sub ? `<span class="sm mut">${sub}</span>` : ''}</div><span class="chev">›</span></button>`;
   return `<div class="topbar" style="padding:6px 0"><h1>${t('more')}</h1></div>${accessCard()}
    <div class="card" style="padding:4px 16px"><div class="list">${row('udhaar', '🤝', t('udhaar'))}${row('budgets', '🎯', t('budgets'))}${row('shops', '🏪', t('shops'))}</div></div>
-   <div class="card" style="padding:4px 16px"><div class="list">${row('settings', '⚙️', t('settings'))}${act('backup', '💾', t('dataTitle'), t('backupKey') + ' · JSON · CSV')}${row('privacy', '🔒', t('privacy'))}${S.demo ? act('demo', '✨', t('demoTools')) : ''}${row('diagnostics', '🩺', t('diagnostics'))}</div></div>`;
+   <div class="card" style="padding:4px 16px"><div class="list">${row('notifications', '🧾', t('notificationHistory'))}${row('settings', '⚙️', t('settings'))}${act('backup', '💾', t('dataTitle'), t('backupKey') + ' · JSON · CSV')}${row('privacy', '🔒', t('privacy'))}${S.demo ? act('demo', '✨', t('demoTools')) : ''}${row('diagnostics', '🩺', t('diagnostics'))}</div></div>`;
+}
+const historyOutcome = outcome => ({
+  prompt: t('historyAsked'), saved: t('historySaved'), duplicate: t('historyDuplicate'),
+  queued: t('historyQueued'), no_session: t('historyWaiting'), ignored: t('historyIgnored'),
+  error: t('historyError'), prompt_failed: t('historyPromptFailed'),
+}[outcome] || t('historyUnknown'));
+const notificationSource = app => ({
+  'com.google.android.apps.nbu.paisa.user': 'Google Pay', 'com.phonepe.app': 'PhonePe',
+  'net.one97.paytm': 'Paytm', 'in.org.npci.upiapp': 'BHIM',
+  'in.amazon.mShop.android.shopping': 'Amazon', 'com.dreamplug.androidapp': 'CRED',
+  'com.google.android.apps.messaging': 'Google Messages', 'com.samsung.android.messaging': 'Samsung Messages',
+  'com.android.mms': 'Messages', 'com.android.messaging': 'Messages',
+}[app] || app || t('unknownApp'));
+async function notifications() {
+  if (!native.present) return `<div class="topbar" style="padding:6px 0"><h1>${t('notificationHistory')}</h1></div>${empty('📱', t('androidOnly'), t('historyAndroidOnly'))}`;
+  const entries = await native.requestNotificationHistory();
+  const rows = entries.map(x => {
+    const when = new Date(x.receivedAt);
+    const date = Number.isNaN(when.getTime()) ? '' : when.toLocaleString(prefs.ui === 'hi' ? 'hi-IN' : prefs.ui === 'te' ? 'te-IN' : 'en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+    const recognized = Number.isFinite(x.amountPaise);
+    return `<div class="notification-entry"><div class="row between"><b>${esc(notificationSource(x.app))}</b><span class="pill">${esc(historyOutcome(x.outcome))}</span></div>
+      <div class="xs mut" style="margin-top:4px">${esc(date)}</div>
+      ${recognized ? `<div class="row between" style="margin-top:8px"><span>${esc(x.counterparty || t('unknownPayee'))} · ${t(x.direction === 'credit' ? 'historyCredit' : 'historyDebit')}</span><b class="amt">${inr(x.amountPaise)}</b></div>` : `<div class="sm mut" style="margin-top:6px">${t('noPaymentFound')}</div>`}</div>`;
+  }).join('');
+  return `<div class="topbar" style="padding:6px 0"><div><h1>${t('notificationHistory')}</h1><div class="sm mut">${t('historyCount', { n: entries.length })}</div></div>${entries.length ? `<button class="ghost" data-act="clear-notification-history">${t('clear')}</button>` : ''}</div>
+    <div class="card flat sm">${t('historyPrivacy')}</div>
+    ${entries.length ? `<div class="card" style="padding:4px 16px"><div class="notification-list">${rows}</div></div>` : empty('🔔', t('noNotificationHistory'), t('historyEmptyHint'))}`;
 }
 async function udhaar() {
   const u = await api('/udhaar');
@@ -426,6 +479,11 @@ async function demoSheet() {
 // ───────────────────────────── actions (event delegation)
 const ACT = {
   reload: () => route(),
+  'clear-notification-history': async () => {
+    if (!confirm(t('clearHistoryConfirm'))) return;
+    try { await native.clearNotificationHistory(); toast(t('historyCleared')); route(); }
+    catch (error) { toast(error.message || t('historyClearFailed'), 1); }
+  },
   'open-cap': el => { location.hash = '#/capture/' + el.dataset.id; },
   tx: el => txSheet(el.dataset.id),
   skip: async el => { await api(`/captures/${el.dataset.id}/skip`, { method: 'POST' }); S.C = null; toast(t('skip')); location.hash = '#/home'; route(); refreshPending(); },

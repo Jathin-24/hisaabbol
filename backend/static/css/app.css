@@ -117,4 +117,12 @@ nav.tabs .fab{margin-top:-26px;width:66px;height:66px;box-shadow:0 10px 24px -6p
 .rowbtn .grow b{display:block}.rowbtn .chev{color:var(--ink2)}
 .rowbtn .grow{min-width:0;line-height:1.35}.notif-card .notif-sources{margin:12px 0 0 56px;line-height:1.45}
 .notif-card .notif-delivery{margin:12px 0 0 56px;padding-top:12px;border-top:1px solid var(--line);line-height:1.45}
+.notification-entry{padding:14px 0;border-bottom:1px solid var(--line);min-width:0}.notification-entry:last-child{border-bottom:0}
+.notification-entry .pill{max-width:60%;white-space:normal;text-align:right}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal-weekday{text-align:center;color:var(--ink2);font-size:11px;font-weight:700;padding:4px 0}
+.cal-day{min-width:0;min-height:54px;padding:5px 2px;border-radius:10px;text-align:center;background:color-mix(in srgb,var(--accent-soft) var(--cal-intensity,0%),var(--surface));display:flex;flex-direction:column;justify-content:center;gap:3px}
+.cal-day.today{outline:2px solid var(--accent);outline-offset:-2px}
+.cal-date{font-size:13px;font-weight:700}.cal-amount{font-size:9px;line-height:1.2;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:clip}
+.cal-empty{min-height:54px}
 .notif-card.is-on{border-color:color-mix(in srgb,var(--good) 28%,var(--line));background:color-mix(in srgb,var(--good) 5%,var(--surface))}
