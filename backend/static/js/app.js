@@ -52,6 +52,11 @@ function sheet(html, onClose) {
   const close = () => { bg.remove(); onClose?.(); }; bg.addEventListener('click', e => { if (e.target === bg) close(); }); bg.close = close; document.body.append(bg); return bg;
 }
 const dayLabel = iso => { const d = new Date(iso), n = new Date(), y = new Date(Date.now() - 864e5); const same = (a, b) => a.toDateString() === b.toDateString(); return same(d, n) ? 'Today' : same(d, y) ? 'Yesterday' : d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }); };
+const dateKeyInZone = (date, timeZone) => {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' })
+    .formatToParts(date).map(({ type, value }) => [type, value]));
+  return `${parts.year}-${parts.month}-${parts.day}`;
+};
 const timeLabel = iso => new Date(iso).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
 const skeleton = () => '<div class="card"><div class="skel" style="width:40%"></div><div class="skel" style="height:40px;width:70%"></div></div><div class="card"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>';
 const empty = (emoji, title, body = '') => `<div class="empty"><div class="e">${emoji}</div><h3>${esc(title)}</h3><p class="sm">${esc(body)}</p></div>`;
@@ -136,15 +141,18 @@ async function home() {
   const [rep, tx, caps, rem] = await Promise.all([api(`/reports/monthly?language=${prefs.ui}`), api('/transactions?limit=5'), api('/captures?status=pending'), api('/udhaar/reminders').catch(() => ({ items: [] }))]);
   S.pending = caps.items.filter(c => c.direction === 'debit'); syncBadge();
   const v = rep.vs_last_month, ob = rep.budgets.find(b => !b.category);
+  const todayKey = dateKeyInZone(new Date(), S.settings.tz);
+  const todaySpent = rep.daily.find(d => d.date === todayKey)?.amount_paise || 0;
   const hero = `<div class="card accent"><div class="sm mut">${monthName(rep.month)} · ${t('spentMonth')}</div><div class="big">${inr(rep.total_spent_paise)}</div>
     ${v.delta_pct == null ? '' : `<div style="margin-top:10px"><span class="pill">${v.delta_pct > 0 ? '▲' : '▼'} ${Math.abs(v.delta_pct)}% ${t('vsLast')}</span></div>`}
     ${ob ? `<div class="bar" style="margin-top:16px;background:rgba(255,255,255,.25)"><i style="width:${Math.min(100, ob.percent)}%;background:#fff"></i></div><div class="xs" style="margin-top:4px">${ob.percent}% · ${inr(ob.limit_paise)}</div>` : ''}</div>`;
+  const todayCard = `<div class="card flat row between"><span class="sm mut">${t('spentToday')}</span><b class="amt">${inr(todaySpent)}</b></div>`;
   const pend = S.pending.length ? `<div class="card"><h2>${t('needsNote')} <span class="pill acc">${S.pending.length}</span></h2><div class="list" style="margin-top:6px">${S.pending.slice(0, 3).map(c => `<div class="row between"><div><b>${inr(c.amount_paise)}</b> <span class="mut">${esc(c.counterparty || '—')}</span><div class="xs mut">${dayLabel(c.occurred_at)} · ${timeLabel(c.occurred_at)}</div></div><button class="primary" data-act="open-cap" data-id="${c.id}">🎙️ ${t('sayIt')}</button></div>`).join('')}</div>${S.pending.length > 3 ? `<button class="ghost full" data-go="activity">${t('seeAll')}</button>` : ''}</div>` : '';
   const reminders = rem.items.length ? `<div class="card flat"><b>🔔 ${t('reminders')}</b><div class="list" style="margin-top:4px">${rem.items.slice(0, 3).map(r => `<div class="row between sm"><span>${esc(r.message)}</span><button class="ghost" style="min-height:0;padding:4px 8px" data-go="udhaar">›</button></div>`).join('')}</div></div>` : '';
   const recent = tx.total ? `<div class="card"><div class="row between"><h2>${t('recent')}</h2><button class="ghost" data-go="activity" style="padding:4px 8px;min-height:0">${t('seeAll')}</button></div><div class="list">${tx.items.map(txRow).join('')}</div></div>`
     : `<div class="card">${empty('🎙️', t('welcomeTitle'), t('obAutoBody'))}${S.demo ? `<button class="primary full" data-act="demo">${t('tryDemo')}</button><button class="full" style="margin-top:8px" data-act="seed">${t('sample')}</button>` : `<button class="primary full" data-act="open-cap" data-id="cash">🎙️ ${t('addCash')}</button>`}</div>`;
   const allDone = tx.total && !S.pending.length ? `<div class="card flat row"><div class="ico" style="--c:#2b8a3e">✅</div><div><b>${t('allCaught')}</b><div class="sm mut">${t('undoneHint')}</div></div></div>` : '';
-  return `<div class="topbar" style="padding:6px 0 0"><div><div class="mut sm">${t('hello')}${prefs.name ? ', ' + esc(prefs.name) : ''} 👋</div><h1>HisaabBol</h1></div><span id="net" class="dot"></span></div><div id="offline" class="card flat sm hide">${t('offline')}</div>${hero}${pend}${allDone}${reminders}${recent}`;
+  return `<div class="topbar" style="padding:6px 0 0"><div><div class="mut sm">${t('hello')}${prefs.name ? ', ' + esc(prefs.name) : ''} 👋</div><h1>HisaabBol</h1></div><span id="net" class="dot"></span></div><div id="offline" class="card flat sm hide">${t('offline')}</div>${hero}${todayCard}${pend}${allDone}${reminders}${recent}`;
 }
 
 // ───────────────────────────── ACTIVITY
@@ -178,6 +186,9 @@ async function txSheet(id) {
 async function report() {
   const m = S.month ? `&month=${S.month}` : ''; const r = await api(`/reports/monthly?language=${prefs.ui}${m}`); S.month = r.month;
   const v = r.vs_last_month, total = r.total_spent_paise, max = Math.max(...r.daily.map(d => d.amount_paise), 1);
+  const todayKey = dateKeyInZone(new Date(), S.settings.tz);
+  const recentDaily = r.daily.filter(d => d.date <= todayKey).slice(-7).reverse();
+  const dailyRows = recentDaily.map(d => `<div class="row between"><span>${new Date(`${d.date}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</span><b>${inr(d.amount_paise)}</b></div>`).join('');
   let acc = 0; const R = 54, C = 2 * Math.PI * R;
   const arcs = r.by_category.map(c => { const len = c.amount_paise / (total || 1) * C; const el = `<circle r="${R}" cx="70" cy="70" fill="none" stroke="${catColor(c.category)}" stroke-width="20" stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-acc}" transform="rotate(-90 70 70)"/>`; acc += len; return el; }).join('');
   const donut = total ? `<div class="donut"><svg width="170" height="170" viewBox="0 0 140 140" role="img" aria-label="Spending by category"><circle r="${R}" cx="70" cy="70" fill="none" stroke="var(--surface2)" stroke-width="20"/>${arcs}</svg><div class="c"><div class="xs mut">${t('thisMonth')}</div><b style="font-size:20px">${inr(total)}</b></div></div>` : '';
@@ -187,7 +198,7 @@ async function report() {
   ${r.pending_notes ? `<div class="card flat sm">⏳ ${r.pending_notes} ${t('pendingTitle').toLowerCase()}</div>` : ''}
   ${total ? `<div class="card"><h2>${t('noticed')}</h2><ul style="padding-left:18px;margin:10px 0 0">${r.insights.map(i => `<li style="margin:8px 0">${esc(i)}</li>`).join('')}</ul></div>
   <div class="card"><h2>${t('whereWent')}</h2>${donut}<div class="legend">${cats.map(c => `<div><span class="sq" style="background:${catColor(c.category)}"></span><span class="grow">${esc(c.category)}</span><b>${inr(c.amount_paise)}</b><span class="mut xs" style="width:38px;text-align:right">${Math.round(c.percent)}%</span></div>`).join('')}</div>${r.by_category.length > 5 ? `<button class="ghost legend-more" data-act="legend">${S.legendAll ? t('moreLess') : t('moreShow')}</button>` : ''}</div>
-  <div class="card"><h2>${t('daily')}</h2><div class="bars" style="margin-top:12px">${r.daily.map(d => `<i title="${d.date}: ${inr(d.amount_paise)}" style="height:${Math.max(3, d.amount_paise / max * 100)}%"></i>`).join('')}</div></div>
+  <div class="card"><h2>${t('daily')}</h2><div class="bars" style="margin-top:12px">${r.daily.map(d => `<i title="${d.date}: ${inr(d.amount_paise)}" style="height:${Math.max(3, d.amount_paise / max * 100)}%"></i>`).join('')}</div><div class="list sm" style="margin-top:12px">${dailyRows}</div></div>
   <div class="card"><h2>${t('topMerchants')}</h2><div class="list">${r.top_merchants.map(x => `<div class="row between"><span>${esc(x.merchant)} <span class="mut xs">×${x.count}</span></span><b>${inr(x.amount_paise)}</b></div>`).join('')}</div></div>`
    : `<div class="card">${empty('📊', t('nothingYet'), t('tryDemo'))}${S.demo ? `<button class="primary full" data-act="seed">${t('sample')}</button>` : ''}</div>`}
   ${r.budgets.length ? `<div class="card"><h2>${t('budgets')}</h2>${r.budgets.map(budgetRow).join('')}</div>` : ''}

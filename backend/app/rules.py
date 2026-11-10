@@ -1,7 +1,7 @@
 """Deterministic categorizer / understander — works with no LLM and is the fallback when the LLM fails."""
 import re
 
-from .textutil import extract_amounts, strip_amounts
+from .textutil import clean_expense_label, extract_amounts
 
 CATEGORIES = [
     "Food & Dining", "Groceries", "Transport", "Fuel", "Bills & Recharge", "Shopping", "Health", "Entertainment",
@@ -101,14 +101,6 @@ def detect_udhaar(text: str, direction: str, counterparty: str | None):
     return None, None
 
 
-def _label(seg: str, fallback: str) -> str:
-    s = strip_amounts(seg)
-    s = re.sub(r"\b(for|ke liye|par|pe|on|the|a|an|aur|and|ka|ki|ko)\b", " ", s, flags=re.I)
-    s = re.sub(r"\s+", " ", s).strip(" ,.-")
-    words = s.split()[:5]
-    return " ".join(words).title() if words else fallback
-
-
 def understand_rules(transcript: str, amount_paise: int | None, counterparty: str | None,
                      is_person: bool | None, direction: str = "debit") -> dict:
     text = (transcript or "").strip()
@@ -121,12 +113,12 @@ def understand_rules(transcript: str, amount_paise: int | None, counterparty: st
     if amount_paise and len(with_amt) >= 2 and sum(a for _, a in with_amt) == amount_paise:
         for s, a in with_amt:
             cat, _ = categorize(s, counterparty, is_person)
-            items.append({"label": _label(s, counterparty or "Item"), "amount_paise": a, "category": cat, "note": None})
+            items.append({"label": clean_expense_label(s, counterparty or "Item"), "amount_paise": a, "category": cat, "note": None})
         conf = 0.7
     else:
         total = amount_paise or (amounts[-1] if amounts else None)
         cat, conf = (udh_cat, 0.75) if udh_cat else categorize(text, counterparty, is_person)
-        items.append({"label": _label(text, counterparty or "Expense"), "amount_paise": total, "category": cat, "note": None})
+        items.append({"label": clean_expense_label(text, counterparty or "Expense"), "amount_paise": total, "category": cat, "note": None})
     follow = None
     if items[0]["amount_paise"] is None:
         follow = "How much was it?"

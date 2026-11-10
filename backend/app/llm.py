@@ -6,6 +6,7 @@ import httpx
 
 from . import rules
 from .config import cfg
+from .textutil import clean_expense_label
 
 _transport: httpx.AsyncBaseTransport | None = None  # tests inject a mock
 
@@ -14,8 +15,10 @@ The user speaks Hindi, Telugu, Tamil, English or a mix. Return ONLY JSON:
 {"items":[{"label":str,"amount_rupees":number|null,"category":str,"note":str|null}],
  "udhaar":{"person":str,"direction":"i_lent"|"i_borrowed"|"repaid_by_me"|"repaid_to_me"}|null,
  "confidence":0..1,"follow_up_question":str|null}
-Rules: category MUST be one of the provided categories. If the user splits the payment ("500 food, 200 gift") return several
-items whose amounts sum to the payment. Never invent amounts: if a payment amount is given and there is one item, use it.
+Rules: category MUST be one of the provided categories. Labels must name only what the payment was for: omit narration such as
+"I paid", "spent", and all spoken amounts/currency. For example, "paid 50 for dinner" has label "Dinner", not "Paid 50 Dinner".
+If the purpose is unclear, use label "Expense", low confidence, and a short follow-up question. If the user splits the payment
+("500 food, 200 gift") return several items whose amounts sum to the payment. Never invent amounts: if a payment amount is given and there is one item, use it.
 Hinglish: 'X ne udhaar liya' = X borrowed from me (i_lent); 'X se udhaar liya' = I borrowed (i_borrowed); 'X ko udhaar diya' = i_lent;
 'X ne udhaar diya' = i_borrowed. Loans -> category 'Lent (udhaar)'; repayments -> 'Repaid'.
 If unsure (confidence<0.5) add a SHORT follow_up_question in the user's language. Label = 2-5 words in English."""
@@ -43,7 +46,8 @@ async def understand(transcript: str, amount_paise: int | None, counterparty: st
             items = []
             for it in out.get("items", []):
                 a = it.get("amount_rupees")
-                items.append({"label": str(it.get("label") or counterparty or "Expense")[:60],
+                label = clean_expense_label(str(it.get("label") or ""), counterparty or "Expense")
+                items.append({"label": label[:60],
                               "amount_paise": int(round(float(a) * 100)) if a is not None else None,
                               "category": it.get("category") if it.get("category") in rules.CATEGORIES else "Other",
                               "note": it.get("note")})

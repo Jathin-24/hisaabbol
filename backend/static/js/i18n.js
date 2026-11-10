@@ -2,7 +2,7 @@
 export const LANGS = { en: 'English', hi: 'हिन्दी', te: 'తెలుగు' };
 const D = {
   en: {
-    home: 'Home', activity: 'Activity', report: 'Report', more: 'More', hello: 'Hello', spentMonth: 'spent this month',
+    home: 'Home', activity: 'Activity', report: 'Report', more: 'More', hello: 'Hello', spentMonth: 'spent this month', spentToday: 'Spent today',
     needsNote: 'Needs a note', allCaught: 'All caught up', sayIt: 'Say it', addCash: 'Add cash', recent: 'Recent', seeAll: 'See all',
     tapSpeak: 'Tap and speak', holdClose: 'Hold the phone close to your mouth', listening: 'Listening… tap to finish', understanding: 'Understanding…',
     heard: 'I heard', save: 'Save', skip: 'Skip', typeInstead: 'Type instead', saved: 'Saved', couldntHear: 'Couldn’t hear that — try again or type it.',
@@ -29,7 +29,7 @@ const D = {
     shops: 'Learned shops', shopsHint: 'Payments here are sorted automatically. Change or remove any time.', learnedFrom: 'learned from {n} confirmations', addShop: 'Add a shop', shopName: 'Shop or person name', reminders: 'Reminders', demoTools: 'Demo tools', dataTitle: 'Your data', moreShow: 'Show all', moreLess: 'Show less',
   },
   hi: {
-    home: 'होम', activity: 'गतिविधि', report: 'रिपोर्ट', more: 'और', hello: 'नमस्ते', spentMonth: 'इस महीने खर्च', needsNote: 'नोट चाहिए', allCaught: 'सब हो गया',
+    home: 'होम', activity: 'गतिविधि', report: 'रिपोर्ट', more: 'और', hello: 'नमस्ते', spentMonth: 'इस महीने खर्च', spentToday: 'आज का खर्च', needsNote: 'नोट चाहिए', allCaught: 'सब हो गया',
     sayIt: 'बोलिए', addCash: 'नकद जोड़ें', recent: 'हाल ही में', seeAll: 'सब देखें', tapSpeak: 'टैप करके बोलिए', holdClose: 'फ़ोन को मुँह के पास रखें',
     listening: 'सुन रहा हूँ… पूरा होने पर टैप करें', understanding: 'समझ रहा हूँ…', heard: 'मैंने सुना', save: 'सेव करें', skip: 'छोड़ें', typeInstead: 'टाइप करें',
     saved: 'सेव हो गया', couldntHear: 'सुनाई नहीं दिया — फिर कोशिश करें या टाइप करें।', whatFor: 'ये किसलिए था?', whoFor: 'ये किसके लिए था और क्यों?', paidTo: 'को दिए',
@@ -53,7 +53,7 @@ const D = {
     shops: 'सीखी हुई दुकानें', shopsHint: 'यहाँ के पेमेंट अपने-आप छँट जाते हैं। कभी भी बदलें या हटाएँ।', learnedFrom: '{n} बार पुष्टि से सीखा', addShop: 'दुकान जोड़ें', shopName: 'दुकान या व्यक्ति का नाम', reminders: 'याद दिलाना', demoTools: 'डेमो टूल्स', dataTitle: 'आपका डेटा', moreShow: 'सब दिखाएँ', moreLess: 'कम दिखाएँ',
   },
   te: {
-    home: 'హోమ్', activity: 'కార్యకలాపం', report: 'నివేదిక', more: 'మరిన్ని', hello: 'నమస్కారం', spentMonth: 'ఈ నెల ఖర్చు', needsNote: 'నోట్ కావాలి', allCaught: 'అన్నీ పూర్తయ్యాయి',
+    home: 'హోమ్', activity: 'కార్యకలాపం', report: 'నివేదిక', more: 'మరిన్ని', hello: 'నమస్కారం', spentMonth: 'ఈ నెల ఖర్చు', spentToday: 'ఈ రోజు ఖర్చు', needsNote: 'నోట్ కావాలి', allCaught: 'అన్నీ పూర్తయ్యాయి',
     sayIt: 'చెప్పండి', addCash: 'నగదు జోడించండి', recent: 'ఇటీవలివి', seeAll: 'అన్నీ చూడండి', tapSpeak: 'ట్యాప్ చేసి మాట్లాడండి', holdClose: 'ఫోన్‌ను నోటికి దగ్గరగా పట్టుకోండి',
     listening: 'వింటున్నాను… పూర్తయ్యాక ట్యాప్ చేయండి', understanding: 'అర్థం చేసుకుంటున్నాను…', heard: 'నేను విన్నది', save: 'సేవ్', skip: 'వదిలేయండి', typeInstead: 'టైప్ చేయండి',
     saved: 'సేవ్ అయింది', couldntHear: 'వినిపించలేదు — మళ్లీ ప్రయత్నించండి లేదా టైప్ చేయండి.', whatFor: 'ఇది దేనికి?', whoFor: 'ఇది ఎవరి కోసం, ఎందుకు?', paidTo: 'కు చెల్లించారు',

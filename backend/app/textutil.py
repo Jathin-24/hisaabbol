@@ -127,3 +127,15 @@ def strip_amounts(text: str) -> str:
     t = _NUM_RE.sub(" ", (text or "").translate(_DEV))
     t = re.sub(rf"\b{_CUR}\b", " ", t, flags=re.I)
     return re.sub(r"\s+", " ", t).strip(" ,.-")
+
+
+def clean_expense_label(text: str, fallback: str = "Expense") -> str:
+    """Keep the expense purpose, not payment narration or its spoken amount."""
+    s = strip_amounts(text)
+    s = re.sub(r"\b(?:i|we)\s+(?=(?:paid|spent|bought|purchased)\b)", "", s, flags=re.I)
+    s = re.sub(r"\b(?:paid|paying|pay|spent|spending|spend|bought|buying|buy|purchased|purchase|expense|transaction)\b",
+               " ", s, flags=re.I)
+    s = re.sub(r"\b(for|ke liye|par|pe|on|the|a|an|aur|and|ka|ki|ko|rupees?|rupaye|rupay|cash)\b",
+               " ", s, flags=re.I)
+    words = re.sub(r"\s+", " ", s).strip(" ,.-").split()[:5]
+    return " ".join(words).title() if words else fallback
