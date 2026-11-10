@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "HisaabBol", "slug": "hisaabbol", "version": "1.0.0", "orientation": "portrait", "scheme": "hisaabbol", "userInterfaceStyle": "automatic",
+    "name": "HisaabBol", "slug": "hisaabbol", "version": "1.0.1", "orientation": "portrait", "scheme": "hisaabbol", "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png", "newArchEnabled": false, "backgroundColor": "#fbf8f3",
     "android": {
-      "package": "app.hisaabbol", "versionCode": 1,
+      "package": "app.hisaabbol", "versionCode": 2,
       "adaptiveIcon": { "foregroundImage": "./assets/adaptive-icon.png", "backgroundColor": "#d9480f" },
       "permissions": ["android.permission.RECORD_AUDIO", "android.permission.MODIFY_AUDIO_SETTINGS", "android.permission.POST_NOTIFICATIONS", "android.permission.INTERNET", "android.permission.WAKE_LOCK"]
     },

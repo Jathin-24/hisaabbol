@@ -9,6 +9,7 @@ export class ApiErr extends Error { constructor(m, code, status, extra) { super(
 export const native = {
   present: !!window.ReactNativeWebView,
   status: 'unknown',
+  notificationsEnabled: null,
   send(msg) { if (this.present) window.ReactNativeWebView.postMessage(JSON.stringify(msg)); },
   listeners: [],
   on(fn) { this.listeners.push(fn); return () => { this.listeners = this.listeners.filter(x => x !== fn); }; },
@@ -30,7 +31,7 @@ export const native = {
 function onNativeMsg(ev) {
   let m = ev.data; if (typeof m === 'string') { try { m = JSON.parse(m); } catch { return; } }
   if (!m || !m.type) return;
-  if (m.type === 'notif_status') native.status = m.status;
+  if (m.type === 'notif_status') { native.status = m.status; native.notificationsEnabled = m.notifications; }
   native.listeners.forEach(f => f(m));
 }
 window.addEventListener('message', onNativeMsg); document.addEventListener('message', onNativeMsg);

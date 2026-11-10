@@ -28,7 +28,12 @@ export default function App() {
   const last = Notifications.useLastNotificationResponse();
 
   const toWeb = useCallback((m: object) => web.current?.postMessage(JSON.stringify(m)), []);
-  const sendStatus = useCallback(async () => toWeb({ type: 'notif_status', status: await getPermissionStatus(), battery: await isIgnoringBatteryOptimizations() }), [toWeb]);
+  const sendStatus = useCallback(async () => {
+    const [status, battery, notifications] = await Promise.all([
+      getPermissionStatus(), isIgnoringBatteryOptimizations(), Notifications.getPermissionsAsync(),
+    ]);
+    toWeb({ type: 'notif_status', status, battery, notifications: notifications.granted });
+  }, [toWeb]);
   const openCapture = useCallback((id: number) => { if (loaded.current) toWeb({ type: 'open_capture', id }); else pendingCapture.current = id; }, [toWeb]);
   const navigate = useCallback((hash: string) => { if (loaded.current) toWeb({ type: 'navigate', hash }); else pendingRoute.current = hash; }, [toWeb]);
 
@@ -71,6 +76,7 @@ export default function App() {
     if (m.type === 'session' && m.token && m.base) { await setSession({ token: m.token, base: m.base }); flushQueue(realDeps).catch(() => {}); }
     if (m.type === 'get_notif_status') sendStatus();
     if (m.type === 'request_notif_access') { requestPermission(); }
+    if (m.type === 'request_prompt_notifications') { Linking.openSettings().catch(() => {}); }
     if (m.type === 'request_battery') requestIgnoreBatteryOptimizations();
     if (m.type === 'digest' && typeof m.time === 'string') scheduleDigest(m.time, realSched).catch(() => {});
     if (m.type === 'exit') BackHandler.exitApp();

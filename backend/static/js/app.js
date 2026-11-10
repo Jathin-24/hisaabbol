@@ -157,7 +157,7 @@ async function home() {
   const recent = tx.total ? `<div class="card"><div class="row between"><h2>${t('recent')}</h2><button class="ghost" data-go="activity" style="padding:4px 8px;min-height:0">${t('seeAll')}</button></div><div class="list">${tx.items.map(txRow).join('')}</div></div>`
     : `<div class="card">${empty('🎙️', t('welcomeTitle'), t('obAutoBody'))}${S.demo ? `<button class="primary full" data-act="demo">${t('tryDemo')}</button><button class="full" style="margin-top:8px" data-act="seed">${t('sample')}</button>` : `<button class="primary full" data-act="open-cap" data-id="cash">🎙️ ${t('addCash')}</button>`}</div>`;
   const allDone = tx.total && !S.pending.length ? `<div class="card flat row"><div class="ico" style="--c:#2b8a3e">✅</div><div><b>${t('allCaught')}</b><div class="sm mut">${t('undoneHint')}</div></div></div>` : '';
-  const notifSetup = native.present && native.status !== 'authorized' ? accessCard({ compact: true }) : '';
+  const notifSetup = native.present && (native.status !== 'authorized' || native.notificationsEnabled === false) ? accessCard({ compact: true }) : '';
   return `<div class="topbar" style="padding:6px 0 0"><div><div class="mut sm">${t('hello')}${prefs.name ? ', ' + esc(prefs.name) : ''} 👋</div><h1>HisaabBol</h1></div><span id="net" class="dot"></span></div><div id="offline" class="card flat sm hide">${t('offline')}</div>${hero}${todayCard}${notifSetup}${pend}${allDone}${reminders}${recent}`;
 }
 
@@ -215,7 +215,7 @@ const budgetRow = b => `<div style="margin-top:12px"><div class="row between"><s
 
 // ───────────────────────────── MORE / UDHAAR / BUDGETS / SETTINGS / DIAGNOSTICS / PRIVACY
 const accessCard = ({ compact = false } = {}) => native.present
-  ? `<div class="card notif-card ${native.status === 'authorized' ? 'is-on' : 'is-off'}"><div class="row"><div class="ico">${native.status === 'authorized' ? '🟢' : '🔔'}</div><div class="grow"><b>${native.status === 'authorized' ? t('accessOn') : t('accessOff')}</b><div class="sm mut">${t('notifSteps')}</div></div></div>${native.status === 'authorized' ? `<div class="sm mut notif-sources">${t('notifSources')}</div>` : `<button class="primary full" style="margin-top:12px" data-act="enable-access">${t('enableAccess')}</button>${compact ? '' : `<div class="xs mut" style="margin-top:8px">${t('notifSources')}</div>`}`}</div>`
+  ? `<div class="card notif-card ${native.status === 'authorized' ? 'is-on' : 'is-off'}"><div class="row"><div class="ico">${native.status === 'authorized' ? '🟢' : '🔔'}</div><div class="grow"><b>${native.status === 'authorized' ? t('accessOn') : t('accessOff')}</b><div class="sm mut">${native.status === 'authorized' ? t('notifStepsOn') : t('notifSteps')}</div></div></div>${native.status === 'authorized' ? `<div class="sm mut notif-sources">${t('notifSources')}</div>${native.notificationsEnabled === false ? `<div class="notif-delivery"><b>${t('promptNotificationsOff')}</b><div class="xs mut">${t('promptNotificationsHelp')}</div><button class="primary full" style="margin-top:10px" data-act="enable-prompts">${t('enablePrompts')}</button></div>` : ''}` : `<button class="primary full" style="margin-top:12px" data-act="enable-access">${t('enableAccess')}</button>${compact ? '' : `<div class="xs mut" style="margin-top:8px">${t('notifSources')}</div>`}`}</div>`
   : `<div class="card flat sm">ℹ️ ${t('webOnly')}</div>`;
 async function more() {
   const row = (go, ico, label, sub = '') => `<button class="rowbtn" data-go="${go}"><div class="ico">${ico}</div><div class="grow"><b>${label}</b>${sub ? `<span class="sm mut">${sub}</span>` : ''}</div><span class="chev">›</span></button>`;
@@ -442,6 +442,7 @@ const ACT = {
   speak: async el => { S.settings = await api('/settings', { method: 'PUT', json: { language_hint: el.dataset.v } }); route(); },
   wipe: async () => { if (confirm(t('confirmDelete'))) { await api('/me/data', { method: 'DELETE' }); toast(t('saved')); route(); } },
   'enable-access': () => native.send({ type: 'request_notif_access' }),
+  'enable-prompts': () => native.send({ type: 'request_prompt_notifications' }),
   'ob-next': async () => { if (OB < 3) { OB++; route(); } else { prefs.onboarded = true; savePrefs(); OB = 0; location.hash = '#/home'; } },
   'ob-back': () => { OB = Math.max(0, OB - 1); route(); },
   'add-udhaar': () => { const s = sheet(`<h2>${t('udhaar')}</h2><label>${t('person')}</label><input id="up"><label>${t('amount')} (₹)</label><input id="ua" type="number" inputmode="decimal"><div class="seg" style="margin-top:14px"><button class="on" data-d="i_lent">${t('owesYou')}</button><button data-d="i_borrowed">${t('youOwe')}</button></div><button class="primary full" style="margin-top:14px" data-ok>${t('add')}</button>`); let dir = 'i_lent';
