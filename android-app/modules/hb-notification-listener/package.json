@@ -1,0 +1,1 @@
+{"name":"hisaabbol-notification-listener","version":"1.0.0","description":"Privacy-first Android NotificationListenerService bridge for HisaabBol: forwards ONLY notifications from an allow-list of payment/SMS apps, as text, to a headless JS task.","main":"index.js","types":"index.d.ts","license":"MIT"}

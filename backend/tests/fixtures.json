@@ -1,0 +1,17 @@
+[
+ {"name":"HDFC UPI debit","text":"Sent Rs.250.00 From HDFC Bank A/C *1234 To ZOMATO On 08/11/26 Ref 123456789012 Not You? Call 18002586161","expect":{"direction":"debit","amount":250,"counterparty":"ZOMATO","upiRef":"123456789012","accountLast4":"1234","instrument":"upi"}},
+ {"name":"SBI UPI debit","text":"Dear UPI user A/C X1234 debited by 250.0 on date 08Nov26 trf to ZOMATO Refno 123456789012 If not u? call 1800111109. -SBI","expect":{"direction":"debit","amount":250,"counterparty":"ZOMATO","upiRef":"123456789012"}},
+ {"name":"ICICI UPI debit","text":"ICICI Bank Acct XX123 debited for Rs 1,250.00 on 08-Nov-26; BIG BASKET credited. UPI:123456789012. Call 18002662 for dispute.","expect":{"direction":"debit","amount":1250,"counterparty":"BIG BASKET","upiRef":"123456789012"}},
+ {"name":"Axis UPI debit","text":"Debit INR 80.00 A/c no. XX1234 08-11-26 10:15:22 UPI/P2M/123456789012/RAMU TEA STALL SMS BLOCKUPI Cust ID to 18001035577 if not you - Axis Bank","expect":{"direction":"debit","amount":80,"counterparty":"RAMU TEA STALL","upiRef":"123456789012"}},
+ {"name":"Kotak UPI debit","text":"Sent Rs.500.00 from Kotak Bank AC X1234 to ramesh@okicici on 08-11-26.UPI Ref 123456789012. Not you, https://kotak.com/KBANKT/Fraud","expect":{"direction":"debit","amount":500,"counterparty":"ramesh","upiRef":"123456789012"}},
+ {"name":"Credit card spend","text":"Rs 1,250.00 spent on HDFC Bank Card x1234 at AMAZON on 08-11-2026:10:15:22. Not you? Call 18002586161","expect":{"direction":"debit","amount":1250,"counterparty":"AMAZON","instrument":"card"}},
+ {"name":"GPay notification","text":"Google Pay | Paid ₹250 to Zomato","expect":{"direction":"debit","amount":250,"counterparty":"Zomato"}},
+ {"name":"PhonePe notification","text":"PhonePe | Paid ₹60 to Ramu Tea Stall","expect":{"direction":"debit","amount":60,"counterparty":"Ramu Tea Stall"}},
+ {"name":"UPI credit received","text":"Rs 5000.00 credited to a/c XX1234 on 08-11-26 by a/c linked to mobile 98XXXXX210 (UPI Ref No 123456789012)","expect":{"direction":"credit","amount":5000,"upiRef":"123456789012"}},
+ {"name":"Person payee flagged","text":"Sent Rs.2400.00 From HDFC Bank A/C *1234 To RAMESH KUMAR On 08/11/26 Ref 123456789012","expect":{"direction":"debit","amount":2400,"counterparty":"RAMESH KUMAR","counterpartyIsPerson":true}},
+ {"name":"OTP ignored","text":"123456 is your OTP for transaction of Rs 250.00 at ZOMATO. Do not share.","expect":null},
+ {"name":"Promo ignored","text":"Get flat Rs 200 cashback on your next payment. Use code SAVE200. T&C apply","expect":null},
+ {"name":"Credit limit info ignored","text":"Your HDFC Bank Credit Card available limit is Rs 50,000.00. Statement due on 20-Nov-26","expect":null},
+ {"name":"Failed txn ignored","text":"Your UPI payment of Rs 250.00 to ZOMATO failed. Amount will not be debited.","expect":null},
+ {"name":"Collect request ignored","text":"ZOMATO has requested money Rs 250.00 on UPI. Approve in your app.","expect":null}
+]

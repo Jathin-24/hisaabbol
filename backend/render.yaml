@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: hisaabbol-api
+    runtime: docker
+    plan: starter            # persistent disks need a paid plan; on the free plan data resets on redeploy/restart
+    healthCheckPath: /api/v1/health
+    disk: {name: data, mountPath: /data, sizeGB: 1}
+    envVars:
+      - {key: GNANI_API_KEY, sync: false}
+      - {key: GEMINI_API_KEY, sync: false}
+      - {key: GEMINI_MODEL, sync: false}
+      - {key: LLM_PROVIDER, value: gemini}
+      - {key: REGISTRATION_KEY, generateValue: true}
+      - {key: DEMO_ENABLED, value: "true"}
+      - {key: DB_PATH, value: /data/hisaabbol.db}
